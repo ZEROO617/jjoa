@@ -38,6 +38,13 @@ Supabase 환경변수가 없으면 자동으로 샘플 프로젝트 5권으로 �
 배포 주소는 `https://<owner>.github.io/<repo>/` 이고, `basePath` 는
 `actions/configure-pages` 가 자동으로 넣는다.
 
+> **주의 — Source를 `GitHub Actions` 로 바꾸지 않으면 배포가 경합한다.**
+> Source가 `Deploy from a branch` 로 남아 있으면 GitHub 내장 워크플로
+> (`pages build and deployment`)가 push마다 함께 돌아 **저장소 루트를 그대로**
+> 배포하려 한다. 이 프로젝트는 루트에 `index.html` 이 없으므로, 내장 워크플로가
+> 나중에 끝나면 빈 페이지가 서빙된다. Source를 `GitHub Actions` 로 바꾸면
+> 내장 워크플로는 더 이상 실행되지 않는다.
+
 로컬에서 같은 결과물을 만들려면:
 
 ```bash
