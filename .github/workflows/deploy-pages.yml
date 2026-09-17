@@ -1,0 +1,67 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+      - claude/serene-bardeen-5xs4pz
+  workflow_dispatch:
+
+# GITHUB_TOKEN 에 Pages 배포 권한을 준다.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 배포는 하나씩. 진행 중인 배포를 취소하지 않는다.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build static export
+        env:
+          NEXT_OUTPUT: export
+          # 프로젝트 사이트는 https://<owner>.github.io/<repo>/ 로 서빙되므로
+          # 저장소 이름을 basePath 로 넣는다. 사용자/조직 사이트라면 빈 값으로 둔다.
+          NEXT_PUBLIC_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          # NEXT_PUBLIC_* 는 빌드 시점에 번들에 박히므로 여기서 주입해야 한다.
+          # 저장소 Settings > Secrets and variables > Actions 에 등록한다.
+          # 값이 없으면 사이트는 샘플 프로젝트로 동작한다.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

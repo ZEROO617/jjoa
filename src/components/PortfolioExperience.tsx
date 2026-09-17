@@ -11,8 +11,8 @@ import { ProjectViewer } from "@/components/project/ProjectViewer";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import { useAmbientAudio } from "@/hooks/useAmbientAudio";
 import { useIsTouchDevice } from "@/hooks/useIsTouchDevice";
+import { usePortfolioData } from "@/hooks/usePortfolioData";
 import { useGameStore } from "@/store/useGameStore";
-import type { AboutProfile, Project } from "@/types/project";
 
 // WebGL 씬은 SSR 대상이 아니다.
 const LibraryScene = dynamic(
@@ -20,17 +20,12 @@ const LibraryScene = dynamic(
   { ssr: false },
 );
 
-interface Props {
-  projects: Project[];
-  about: AboutProfile;
-  usingSampleData: boolean;
-}
-
-export function PortfolioExperience({ projects, about, usingSampleData }: Props) {
+export function PortfolioExperience() {
+  const { projects, about, usingSampleData, loading } = usePortfolioData();
   const pointerLocked = useGameStore((s) => s.pointerLocked);
   const soundEnabled = useGameStore((s) => s.soundEnabled);
   const touchMode = useIsTouchDevice();
-  const [noticeVisible, setNoticeVisible] = useState(usingSampleData);
+  const [noticeDismissed, setNoticeDismissed] = useState(false);
 
   useAmbientAudio();
 
@@ -66,6 +61,9 @@ export function PortfolioExperience({ projects, about, usingSampleData }: Props)
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  // 데이터가 오기 전에 씬을 만들면 샘플 책이 잠깐 보였다가 교체되므로 기다린다.
+  if (loading) return <LoadingScreen />;
+
   return (
     <div className="experience" data-locked={pointerLocked}>
       <LibraryScene projects={projects} about={about} />
@@ -87,12 +85,12 @@ export function PortfolioExperience({ projects, about, usingSampleData }: Props)
           </button>
         </div>
 
-        {noticeVisible && (
+        {usingSampleData && !noticeDismissed && (
           <div className="notice" style={{ pointerEvents: "auto" }}>
             Supabase가 연결되지 않아 샘플 프로젝트로 표시 중입니다. <br />
             <button
               type="button"
-              onClick={() => setNoticeVisible(false)}
+              onClick={() => setNoticeDismissed(true)}
               style={{
                 marginTop: 6,
                 background: "none",

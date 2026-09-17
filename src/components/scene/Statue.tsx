@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useMemo } from "react";
+import { MeshStandardMaterial } from "three";
+import { createLabelTexture } from "@/lib/labelTexture";
 import { STATUE } from "./layout";
-import { SpineText } from "./SpineText";
 import type { AboutProfile } from "@/types/project";
 
 /**
@@ -9,6 +11,33 @@ import type { AboutProfile } from "@/types/project";
  * (About 카드 자체는 DOM 오버레이인 AboutPanel이 담당한다.)
  */
 export function Statue({ about }: { about: AboutProfile }) {
+  // 명패의 이름은 캔버스 텍스처로 구운다(Book.tsx의 책등과 같은 방식).
+  const plaque = useMemo(() => {
+    const texture = createLabelTexture({
+      lines: [about.name],
+      width: 512,
+      height: 142,
+      background: "#8a6b3a",
+      color: "#1c1510",
+      fontSize: 62,
+      letterSpacing: 2,
+      padding: 26,
+    });
+    const material = new MeshStandardMaterial({
+      map: texture,
+      roughness: 0.5,
+      metalness: 0.55,
+    });
+    return { texture, material };
+  }, [about.name]);
+
+  useEffect(() => {
+    return () => {
+      plaque.material.dispose();
+      plaque.texture.dispose();
+    };
+  }, [plaque]);
+
   return (
     <group position={[STATUE.position.x, 0, STATUE.position.z]}>
       {/* 좌대 */}
@@ -17,26 +46,20 @@ export function Statue({ about }: { about: AboutProfile }) {
         <meshStandardMaterial color="#3a352e" roughness={0.9} />
       </mesh>
       <mesh position={[0, STATUE.pedestalHeight / 2 + 0.12, 0]} receiveShadow castShadow>
-        <cylinderGeometry args={[STATUE.pedestalRadius * 0.72, STATUE.pedestalRadius * 0.82, STATUE.pedestalHeight, 32]} />
+        <cylinderGeometry
+          args={[STATUE.pedestalRadius * 0.72, STATUE.pedestalRadius * 0.82, STATUE.pedestalHeight, 32]}
+        />
         <meshStandardMaterial color="#464038" roughness={0.85} />
       </mesh>
 
-      {/* 명패 */}
-      <mesh position={[0, 0.72, STATUE.pedestalRadius * 0.74]} rotation={[-0.1, 0, 0]}>
-        <boxGeometry args={[0.72, 0.2, 0.02]} />
-        <meshStandardMaterial color="#8a6b3a" roughness={0.5} metalness={0.6} />
-      </mesh>
-      <SpineText
-        position={[0, 0.72, STATUE.pedestalRadius * 0.74 + 0.02]}
+      {/* 명패 — 이름이 구워진 텍스처 */}
+      <mesh
+        position={[0, 0.72, STATUE.pedestalRadius * 0.74]}
         rotation={[-0.1, 0, 0]}
-        fontSize={0.075}
-        color="#1c1510"
-        anchorX="center"
-        anchorY="middle"
-        maxWidth={0.66}
+        material={plaque.material}
       >
-        {about.name}
-      </SpineText>
+        <boxGeometry args={[0.72, 0.2, 0.02]} />
+      </mesh>
 
       {/* 흉상 — 절차적 형태(RPD 27장의 Blender 에셋으로 교체 가능).
           비율: 어깨를 넓게, 머리를 작게 잡아 체스 폰처럼 보이지 않도록 한다. */}

@@ -17,6 +17,45 @@ npm run dev     # http://localhost:3000
 Supabase 환경변수가 없으면 자동으로 샘플 프로젝트 5권으로 동작한다.
 3D 씬과 인터랙션은 DB 없이도 전부 확인할 수 있다.
 
+## 배포
+
+두 가지 방식을 지원한다.
+
+### GitHub Pages (정적)
+
+`main` 또는 개발 브랜치에 push하면 `.github/workflows/deploy-pages.yml` 이
+정적 사이트를 만들어 배포한다. **처음 한 번은 저장소 설정이 필요하다.**
+
+1. **Settings → Pages → Build and deployment → Source** 를 `GitHub Actions` 로 변경
+   (이 설정을 하지 않으면 워크플로가 실패한다)
+2. Supabase를 쓴다면 **Settings → Secrets and variables → Actions** 에 추가
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+
+   `NEXT_PUBLIC_*` 값은 빌드 시점에 번들에 박히므로 시크릿을 등록한 뒤
+   다시 배포해야 반영된다. 등록하지 않으면 샘플 프로젝트로 동작한다.
+
+배포 주소는 `https://<owner>.github.io/<repo>/` 이고, `basePath` 는
+`actions/configure-pages` 가 자동으로 넣는다.
+
+로컬에서 같은 결과물을 만들려면:
+
+```bash
+NEXT_PUBLIC_BASE_PATH=/jjoa npm run build:pages   # → out/
+```
+
+정적 배포에서는 서버가 없으므로 프로젝트 데이터를 **브라우저가 직접** Supabase에서
+읽는다(`src/hooks/usePortfolioData.ts`). 덕분에 관리자가 프로젝트를 추가하면
+**재빌드 없이** 새로고침만으로 도서관에 새 책이 나타난다.
+
+### Node 서버 (Vercel 등)
+
+```bash
+npm run build && npm start
+```
+
+같은 코드가 그대로 동작한다. 모든 라우트가 정적이라 서버가 하는 일은 파일 서빙뿐이다.
+
 ## 조작
 
 | 입력 | 동작 |
@@ -56,7 +95,7 @@ anon key는 공개되는 값이므로 숨기지 않는다. 실제 권한 통제�
 | --- | --- |
 | `/admin` | 프로젝트 목록 (생성 / 수정 / 삭제) |
 | `/admin/projects/new` | 새 프로젝트 |
-| `/admin/projects/[id]` | 프로젝트 수정 |
+| `/admin/projects/edit?id=...` | 프로젝트 수정 |
 | `/admin/editor` | 3D Book Editor — 기즈모로 책을 옮기고 Transform을 저장 |
 | `/admin/about` | 중앙 동상의 About 정보 |
 
@@ -109,12 +148,18 @@ IDLE → HOVERED → PULLING → OPENING → OPEN → CLOSING → RETURNING → 
   크게 보이도록 맞춰, UI가 지면에 인쇄된 것처럼 읽히게 했다.
 - **앰비언트 사운드는 Web Audio로 합성**한다(오디오 파일 없음). 브라우저 자동재생
   정책에 맞춰 사용자가 `Sound On` 을 누른 뒤에만 AudioContext를 만든다.
-- **책등 폰트는 자체 호스팅**한다(`public/fonts/spine-latin.ttf`, EB Garamond
-  Latin 서브셋 27KB). drei의 `<Text>` 는 폰트가 준비될 때까지 React를 suspend하고,
-  `font` 를 지정하지 않으면 troika가 jsdelivr CDN에서 폰트를 받아온다. 그 요청이
-  느리거나 차단되면 도서관 전체가 로딩 화면에서 멈춘다. 그래서 폰트를 직접 호스팅하고,
-  텍스트마다 `Suspense` 경계를 따로 두어(`SpineText.tsx`) 폰트 문제가 씬 렌더링을
-  막지 못하게 했다.
+- **책등 제목과 명패는 캔버스 텍스처**다(`src/lib/labelTexture.ts`).
+  drei의 `<Text>`(troika)를 쓰지 않는 이유: 폰트가 준비될 때까지 React를 suspend하고,
+  `font` 를 지정하지 않으면 외부 CDN(jsdelivr)에서 폰트를 받아온다. 그 요청이 느리거나
+  차단되면 도서관 전체가 로딩 화면에서 멈춘다(실제로 겪은 문제다). 책등 제목은 짧고
+  평면에 고정된 정적 텍스트이므로 캔버스 텍스처로 충분하고, 외부 의존성·워커·서스펜스가
+  전혀 없으며 한글도 시스템 폰트로 바로 렌더된다.
+- **프로젝트 수정 경로는 쿼리 파라미터**다(`/admin/projects/edit?id=...`).
+  RPD 36장은 `/admin/projects/[id]` 를 제시하지만, 정적 내보내기에서는 빌드 시점에
+  알 수 없는 id를 미리 생성할 수 없다.
+- **장식용 책은 프로젝트 책보다 5cm 뒤로 물러나 있고**, 프로젝트 책이 놓인 칸에는
+  아예 생성되지 않는다(`Library.tsx`). 그러지 않으면 프로젝트 책이 장식용 책에 가려
+  책등 제목이 보이지 않는다.
 
 ## 경량화 / 성능
 
@@ -123,7 +168,8 @@ IDLE → HOVERED → PULLING → OPENING → OPEN → CLOSING → RETURNING → 
   그림자는 directional 하나만 굽는다.
 - 먼지는 `Points` 하나(170개)로 처리한다.
 - `AdaptiveDpr` + `dpr={[1, 1.75]}` 로 저성능 기기에서 해상도를 낮춘다.
-- 외부 3D 에셋이 없어 초기 다운로드는 JS(첫 로드 ≈209KB) + 폰트 27KB 뿐이다.
+- 외부 3D 에셋·웹폰트가 없다. 정적 배포 전체 용량이 약 2.4MB(대부분 JS)이며
+  첫 로드 JS는 약 281KB다. RPD 29장의 권장치(3D Scene < 15MB)를 크게 밑돈다.
 - 프로젝트 대표 이미지는 `loading="lazy"` 로 필요할 때 받는다.
 
 ## 검증 상태
@@ -132,7 +178,10 @@ IDLE → HOVERED → PULLING → OPENING → OPEN → CLOSING → RETURNING → 
 - 실제 Chromium에서 확인: 로딩 화면 해제, Pointer Lock, WASD 이동, 벽/동상 충돌,
   동상 근접 About 표시, `Tab` 인덱스, 인덱스 이동, 크로스헤어 조준 → `[E]` 프롬프트,
   `E` 로 펼치기, 프로젝트 UI(제목·기간·개요·외부 링크 `target="_blank" rel="noopener noreferrer"`),
-  `Esc` 로 닫고 책장 복귀, 탐색 상태 복구. 콘솔 에러 없음.
+  `Esc` 로 닫고 책장 복귀, 탐색 상태 복구, 책등 제목 렌더링. 콘솔 에러 없음.
+- 정적 내보내기도 같은 방식으로 확인했다. `out/` 을 `/jjoa` 하위 경로에 마운트한
+  서버(GitHub Pages 모사)에서 전체 흐름과 깊은 링크(`/admin/projects/edit/?id=...`)가
+  동작하고, 실패한 요청이 하나도 없었다.
 - **Supabase 의존 경로(로그인, CRUD, 이미지 업로드, 3D 에디터 저장)는 구현했지만
   실제 인스턴스로는 검증하지 못했다** — 이 환경에 Supabase 자격 증명이 없었다.
   `.env.local` 을 채우고 `schema.sql` 을 실행한 뒤 한 번 확인이 필요하다.

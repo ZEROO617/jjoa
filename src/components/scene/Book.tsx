@@ -12,10 +12,10 @@ import {
   Quaternion,
   Vector3,
 } from "three";
+import { createLabelTexture, toLines } from "@/lib/labelTexture";
 import { useGameStore, type BookPhase } from "@/store/useGameStore";
 import { registerInteractive } from "./interactives";
 import { BOOK } from "./layout";
-import { SpineText } from "./SpineText";
 import type { Project } from "@/types/project";
 
 /** 치수는 layout.ts와 공유한다(관리자 슬롯 계산도 같은 값을 쓴다). */
@@ -110,13 +110,36 @@ export function Book({ project, selected, focused }: BookProps) {
     });
     // globals.css의 --paper와 같은 색 — 오버레이 UI가 지면에 인쇄된 것처럼 보이게 한다.
     const paper = new MeshStandardMaterial({ color: "#e5d8ba", roughness: 0.95 });
-    return { cover, paper };
-  }, [project.bookColor]);
+
+    // 책등: 제목을 캔버스 텍스처로 구워 재질 map에 넣는다.
+    // 캔버스 비율(144/512)은 책등 면의 비율(T/H)과 같아 글자가 늘어나지 않는다.
+    const spineLabel = createLabelTexture({
+      lines: toLines(project.bookTitle),
+      width: 144,
+      height: 512,
+      background: project.bookColor,
+      color: "#e8d9b5",
+      fontSize: 30,
+      letterSpacing: 1.5,
+      rules: true,
+    });
+    const spine = new MeshStandardMaterial({
+      map: spineLabel,
+      emissive: project.bookColor,
+      emissiveIntensity: 0,
+      roughness: 0.78,
+      metalness: 0.04,
+    });
+
+    return { cover, paper, spine, spineLabel };
+  }, [project.bookColor, project.bookTitle]);
 
   useEffect(() => {
     return () => {
       materials.cover.dispose();
       materials.paper.dispose();
+      materials.spine.dispose();
+      materials.spineLabel.dispose();
     };
   }, [materials]);
 
@@ -231,6 +254,7 @@ export function Book({ project, selected, focused }: BookProps) {
     const wantHighlight = current === "HOVERED" ? 1 : 0;
     highlight.current += (wantHighlight - highlight.current) * Math.min(1, delta * 10);
     materials.cover.emissiveIntensity = highlight.current * 0.45;
+    materials.spine.emissiveIntensity = highlight.current * 0.45;
 
     switch (current) {
       case "IDLE":
@@ -308,8 +332,6 @@ export function Book({ project, selected, focused }: BookProps) {
     group.scale.set(project.scale.x * z, project.scale.y * z, project.scale.z * z);
   });
 
-  const spineText = project.bookTitle.replace(/\\n/g, "\n");
-
   return (
     <group ref={root}>
       {/*
@@ -341,23 +363,8 @@ export function Book({ project, selected, focused }: BookProps) {
         />
       </group>
 
-      {/* 책등 + 책등 제목 */}
-      <mesh geometry={GEO.spine} material={materials.cover} position={[0, 0, D / 2 + COVER / 2]} castShadow />
-      <SpineText
-        position={[0, 0, D / 2 + COVER + 0.0015]}
-        rotation={[0, 0, -Math.PI / 2]}
-        fontSize={0.028}
-        lineHeight={1.2}
-        letterSpacing={0.04}
-        color="#e8d9b5"
-        anchorX="center"
-        anchorY="middle"
-        maxWidth={H * 0.88}
-        textAlign="center"
-        outlineWidth={0}
-      >
-        {spineText}
-      </SpineText>
+      {/* 책등 — 제목이 구워진 텍스처를 쓴다(RPD 10장) */}
+      <mesh geometry={GEO.spine} material={materials.spine} position={[0, 0, D / 2 + COVER / 2]} castShadow />
     </group>
   );
 }

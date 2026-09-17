@@ -75,7 +75,7 @@ export function ProjectList() {
                 <td className="muted">{formatPeriod(project.startDate, project.endDate)}</td>
                 <td>
                   <div className="row-actions">
-                    <Link className="btn" href={`/admin/projects/${project.id}`}>
+                    <Link className="btn" href={`/admin/projects/edit?id=${project.id}`}>
                       Edit
                     </Link>
                     <button

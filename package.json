@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:pages": "NEXT_OUTPUT=export next build"
   },
   "devDependencies": {
     "@types/node": "^22.20.3",

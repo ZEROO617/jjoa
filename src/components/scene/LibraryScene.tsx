@@ -51,7 +51,7 @@ export function LibraryScene({ projects, about }: LibrarySceneProps) {
 
       <Suspense fallback={null}>
         <Lighting />
-        <Library />
+        <Library projects={projects} />
         <Statue about={about} />
         <Books projects={projects} />
         <Dust />

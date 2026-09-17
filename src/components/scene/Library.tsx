@@ -2,7 +2,23 @@
 
 import { useMemo } from "react";
 import { DoubleSide } from "three";
-import { BOOKCASES, DESKS, ROOM, WINDOWS, type BookcaseDef, type DeskDef } from "./layout";
+import {
+  BOOK,
+  BOOKCASES,
+  BOOK_SPINE_FRONT,
+  DESKS,
+  ROOM,
+  WINDOWS,
+  worldToBookcaseLocal,
+  type BookcaseDef,
+  type DeskDef,
+} from "./layout";
+import type { Project } from "@/types/project";
+
+/** 장식용 책의 앞면 깊이 — 프로젝트 책의 책등보다 뒤로 물린다. */
+const FILLER_FRONT = BOOK_SPINE_FRONT - 0.05;
+/** 책장 뒷판(local z ≈ -0.24)을 뚫지 않는 두께 */
+const FILLER_DEPTH = 0.28;
 
 /**
  * 도서관 구조물.
@@ -12,7 +28,7 @@ import { BOOKCASES, DESKS, ROOM, WINDOWS, type BookcaseDef, type DeskDef } from 
  * 절차적 지오메트리로 구현했다. 나중에 /public/models/library.glb 를 추가하면
  * 이 컴포넌트만 useGLTF 로 교체하면 되고, 충돌/책 좌표는 그대로 유지된다.
  */
-export function Library() {
+export function Library({ projects = [] }: { projects?: Project[] }) {
   const wallY = ROOM.height / 2;
   const halfW = ROOM.width / 2;
   const halfD = ROOM.depth / 2;
@@ -59,7 +75,7 @@ export function Library() {
       ))}
 
       {BOOKCASES.map((b) => (
-        <Bookcase key={b.id} def={b} />
+        <Bookcase key={b.id} def={b} projects={projects} />
       ))}
 
       {DESKS.map((d, i) => (
@@ -150,9 +166,26 @@ function Window({ wall, offset }: { wall: "west" | "east"; offset: number }) {
   );
 }
 
-function Bookcase({ def }: { def: BookcaseDef }) {
+function Bookcase({ def, projects }: { def: BookcaseDef; projects: Project[] }) {
   const { width, height, depth, shelves } = def;
   const rotation: [number, number, number] = [0, (def.yaw * Math.PI) / 180, 0];
+
+  /**
+   * 이 책장에 놓인 프로젝트 책의 로컬 x/높이.
+   * 같은 자리에 장식용 책을 놓으면 프로젝트 책과 겹쳐 보이므로 비워 둔다.
+   */
+  const occupied = useMemo(
+    () =>
+      projects
+        .map((project) => ({
+          local: worldToBookcaseLocal(def, project.position),
+          y: project.position.y,
+        }))
+        // 책장 폭·깊이 안에 있는 책만 이 책장 소속으로 본다.
+        .filter((p) => Math.abs(p.local.z) < depth && Math.abs(p.local.x) < width / 2 + 0.2)
+        .map((p) => ({ x: p.local.x, y: p.y })),
+    [def, depth, projects, width],
+  );
 
   // 장식용 더미 책 — 프로젝트 책과 구분되도록 채도를 낮췄다.
   const filler = useMemo(() => {
@@ -175,18 +208,23 @@ function Bookcase({ def }: { def: BookcaseDef }) {
           continue;
         }
         const w = 0.05 + rand() * 0.07;
-        items.push({
-          x: cursor + w / 2,
-          w,
-          h: 0.24 + rand() * 0.1,
-          color: palette[Math.floor(rand() * palette.length)],
-        });
+        const x = cursor + w / 2;
+        const h = 0.24 + rand() * 0.1;
+        const centerY = shelfY + 0.025 + h / 2;
+
+        // 프로젝트 책과 같은 칸·같은 높이면 건너뛴다.
+        const clash = occupied.some(
+          (o) => Math.abs(x - o.x) < BOOK.thickness * 2 && Math.abs(centerY - o.y) < 0.3,
+        );
+        if (!clash) {
+          items.push({ x, w, h, color: palette[Math.floor(rand() * palette.length)] });
+        }
         cursor += w + 0.005;
       }
       rows.push({ y: shelfY, items });
     }
     return rows;
-  }, [def.id, height, shelves, width]);
+  }, [def.id, height, occupied, shelves, width]);
 
   return (
     <group position={[def.x, 0, def.z]} rotation={rotation}>
@@ -214,10 +252,19 @@ function Bookcase({ def }: { def: BookcaseDef }) {
         <meshStandardMaterial color="#2a1c12" roughness={0.88} />
       </mesh>
 
+      {/*
+        장식용 책의 앞면(local z = FILLER_FRONT)은 프로젝트 책의 책등 앞면보다
+        뒤에 있어야 한다. 그러지 않으면 프로젝트 책이 장식용 책에 가려
+        제목이 보이지 않는다.
+      */}
       {filler.map((row, ri) =>
         row.items.map((item, ii) => (
-          <mesh key={`${ri}-${ii}`} position={[item.x, row.y + 0.025 + item.h / 2, 0.02]} castShadow>
-            <boxGeometry args={[item.w, item.h, depth * 0.62]} />
+          <mesh
+            key={`${ri}-${ii}`}
+            position={[item.x, row.y + 0.025 + item.h / 2, FILLER_FRONT - FILLER_DEPTH / 2]}
+            castShadow
+          >
+            <boxGeometry args={[item.w, item.h, FILLER_DEPTH]} />
             <meshStandardMaterial color={item.color} roughness={0.85} />
           </mesh>
         )),

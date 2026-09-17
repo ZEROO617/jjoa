@@ -40,6 +40,15 @@ export const BOOK = {
   cover: 0.008,
 } as const;
 
+/**
+ * 책장 로컬 z 기준, 프로젝트 책 중심이 놓이는 깊이.
+ * 책장 앞면(+z)에서 살짝 안쪽으로 들어가 있다.
+ */
+export const SHELF_BOOK_RECESS = -0.02;
+
+/** 프로젝트 책의 책등 앞면(책장 로컬 z). 장식용 책은 이보다 뒤에 있어야 한다. */
+export const BOOK_SPINE_FRONT = SHELF_BOOK_RECESS + BOOK.depth / 2 + BOOK.cover;
+
 export type Yaw = 0 | 90 | 180 | 270;
 
 export interface BookcaseDef {
@@ -185,6 +194,23 @@ export function viewingSpot(
   return { ...spot, yaw: Math.atan2(spot.x - position.x, spot.z - position.z) };
 }
 
+/**
+ * 월드 좌표를 책장 로컬 좌표로 변환한다.
+ * Ry(θ): local→world 가 (lx, lz) → (lx·cos + lz·sin, -lx·sin + lz·cos) 이므로
+ * 역변환은 lx = dx·cos - dz·sin, lz = dx·sin + dz·cos 이다.
+ */
+export function worldToBookcaseLocal(
+  shelf: BookcaseDef,
+  world: { x: number; z: number },
+): { x: number; z: number } {
+  const yawRad = (shelf.yaw * Math.PI) / 180;
+  const cos = Math.cos(yawRad);
+  const sin = Math.sin(yawRad);
+  const dx = world.x - shelf.x;
+  const dz = world.z - shelf.z;
+  return { x: dx * cos - dz * sin, z: dx * sin + dz * cos };
+}
+
 export interface ShelfSlot {
   label: string;
   bookcaseId: string;
@@ -199,8 +225,7 @@ export interface ShelfSlot {
  */
 export function shelfSlots(): ShelfSlot[] {
   const slots: ShelfSlot[] = [];
-  /** 책장 앞면에서 살짝 안쪽으로 들어간 위치 */
-  const localZ = -0.02;
+  const localZ = SHELF_BOOK_RECESS;
 
   for (const shelf of BOOKCASES) {
     const yawRad = (shelf.yaw * Math.PI) / 180;

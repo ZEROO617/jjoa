@@ -122,7 +122,7 @@ export function BookEditor() {
             <directionalLight position={[8, 14, 6]} intensity={1.4} />
             <hemisphereLight intensity={0.5} color="#bcd0e8" groundColor="#3a2a1c" />
 
-            <Library />
+            <Library projects={projects} />
             <Grid
               args={[ROOM.width, ROOM.depth]}
               cellSize={1}
