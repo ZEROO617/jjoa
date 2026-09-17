@@ -1,0 +1,652 @@
+:root {
+  /* 오래된 도서관 팔레트 */
+  --ink: #f0e4cd;
+  --ink-dim: #b7a68a;
+  --ink-faint: #7d6f5c;
+  --paper: #e5d8ba;
+  --paper-deep: #d6c7a4;
+  --wood: #2a1d14;
+  --wood-dark: #17100b;
+  --amber: #d9a24a;
+  --amber-bright: #f0c076;
+  --crimson: #8a3b32;
+
+  --font-serif: ui-serif, Georgia, "Times New Roman", Times, serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #0d0a08;
+  color: var(--ink);
+  font-family: var(--font-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  overscroll-behavior: none;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ───────── 3D 경험 레이아웃 ───────── */
+
+.experience {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+.experience canvas {
+  display: block;
+  /* 탐색 중에는 커서를 숨겨 크로스헤어만 보이게 한다(RPD 32장). */
+  cursor: crosshair;
+}
+
+.experience[data-locked="true"] canvas {
+  cursor: none;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ───────── 크로스헤어 / 프롬프트 ───────── */
+
+.crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  opacity: 0.75;
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.crosshair::before,
+.crosshair::after {
+  content: "";
+  position: absolute;
+  background: var(--ink);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+}
+
+.crosshair::before {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.crosshair::after {
+  left: 50%;
+  top: 0;
+  height: 100%;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.crosshair[data-focused="true"] {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.45);
+}
+
+.prompt {
+  position: absolute;
+  top: calc(50% + 34px);
+  left: 50%;
+  transform: translate(-50%, 6px);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transition: opacity 180ms ease, transform 180ms ease;
+  white-space: nowrap;
+}
+
+.prompt[data-visible="true"] {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.prompt .key {
+  display: inline-block;
+  padding: 2px 7px;
+  margin-right: 8px;
+  border: 1px solid rgba(240, 228, 205, 0.5);
+  border-radius: 3px;
+  background: rgba(20, 14, 10, 0.55);
+}
+
+/* ───────── 조작 안내 ───────── */
+
+.hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin-top: 96px;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 10px 22px;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: var(--ink-dim);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.95);
+  transition: opacity 700ms ease;
+}
+
+.hint[data-hidden="true"] {
+  opacity: 0;
+}
+
+.hint b {
+  color: var(--ink);
+  font-weight: 400;
+  justify-self: end;
+}
+
+/* ───────── About 카드 ───────── */
+
+.about {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  transform: translate(-50%, 14px);
+  min-width: 260px;
+  padding: 22px 30px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(24, 17, 12, 0.88), rgba(14, 10, 7, 0.92));
+  border: 1px solid rgba(217, 162, 74, 0.28);
+  border-radius: 2px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transition: opacity 320ms ease, transform 320ms ease;
+}
+
+.about[data-visible="true"] {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.about h2 {
+  margin: 0 0 4px;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+}
+
+.about .role {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 14px;
+}
+
+.about .tagline {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-dim);
+  white-space: pre-line;
+}
+
+.about .links {
+  margin-top: 16px;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.about .links a {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(183, 166, 138, 0.4);
+  padding-bottom: 2px;
+}
+
+.about .links a:hover {
+  color: var(--amber-bright);
+  border-color: var(--amber-bright);
+}
+
+/* ───────── 프로젝트 인덱스 (TAB) ───────── */
+
+.index-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 6, 4, 0.72);
+  backdrop-filter: blur(3px);
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fade-in 200ms ease;
+}
+
+.index {
+  width: min(520px, 88vw);
+  max-height: 76vh;
+  overflow-y: auto;
+  padding: 34px 38px;
+  background: linear-gradient(180deg, rgba(26, 19, 13, 0.96), rgba(16, 11, 8, 0.98));
+  border: 1px solid rgba(217, 162, 74, 0.25);
+}
+
+.index h2 {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--amber);
+  font-weight: 400;
+}
+
+.index p.muted {
+  margin: 0 0 22px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--ink-faint);
+}
+
+.index ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.index li + li {
+  border-top: 1px solid rgba(240, 228, 205, 0.08);
+}
+
+.index button {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  padding: 14px 4px;
+  background: none;
+  border: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: background 160ms ease, padding-left 160ms ease;
+}
+
+.index button:hover,
+.index button:focus-visible {
+  background: rgba(217, 162, 74, 0.1);
+  padding-left: 12px;
+  outline: none;
+}
+
+.index .num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--amber);
+  letter-spacing: 0.1em;
+}
+
+.index .title {
+  font-size: 17px;
+  letter-spacing: 0.04em;
+}
+
+.index .period {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  letter-spacing: 0.08em;
+}
+
+/* ───────── 프로젝트 상세 (펼친 책) ───────── */
+
+.viewer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  padding: 24px;
+}
+
+.spread {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  width: min(940px, 94vw);
+  max-height: 78vh;
+  pointer-events: auto;
+  color: #2b2118;
+  background:
+    linear-gradient(90deg, rgba(120, 96, 64, 0.22) 49.4%, rgba(60, 46, 28, 0.5) 50%, rgba(120, 96, 64, 0.22) 50.6%),
+    linear-gradient(175deg, var(--paper), var(--paper-deep));
+  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.72), inset 0 0 90px rgba(120, 90, 50, 0.22);
+  border-radius: 3px;
+  /* 책이 펼쳐지는 애니메이션에서 이어지도록 같은 축으로 확대된다(RPD 12장). */
+  animation: spread-open 420ms cubic-bezier(0.22, 0.9, 0.24, 1) both;
+  overflow: hidden;
+}
+
+.spread[data-closing="true"] {
+  animation: spread-close 320ms cubic-bezier(0.5, 0, 0.75, 0.4) both;
+}
+
+@keyframes spread-open {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) rotateX(16deg) scale(0.86);
+  }
+  to {
+    opacity: 1;
+    transform: perspective(1400px) rotateX(0deg) scale(1);
+  }
+}
+
+@keyframes spread-close {
+  from {
+    opacity: 1;
+    transform: perspective(1400px) rotateX(0deg) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: perspective(1400px) rotateX(14deg) scale(0.9);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.page {
+  padding: 42px 44px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.page.left {
+  border-right: none;
+}
+
+.page h1 {
+  margin: 0 0 10px;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.page .period {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #6f5a3c;
+  margin-bottom: 24px;
+}
+
+.cover-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: rgba(70, 55, 36, 0.14);
+  border: 1px solid rgba(70, 55, 36, 0.28);
+  overflow: hidden;
+}
+
+.cover-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cover-frame .placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: #8a7350;
+}
+
+.page .section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: #8a7350;
+  margin-bottom: 14px;
+}
+
+.page .description {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.85;
+  white-space: pre-line;
+  color: #3a2d20;
+}
+
+.page .actions {
+  margin-top: auto;
+  padding-top: 32px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page .actions a {
+  flex: 1 1 auto;
+  min-width: 130px;
+  text-align: center;
+  padding: 13px 20px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--paper);
+  background: #3c2e1f;
+  border: 1px solid #3c2e1f;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.page .actions a:hover {
+  background: #55402a;
+  transform: translateY(-1px);
+}
+
+.page .actions a.ghost {
+  color: #3c2e1f;
+  background: transparent;
+}
+
+.page .actions a.ghost:hover {
+  background: rgba(60, 46, 31, 0.1);
+}
+
+.viewer-close {
+  position: absolute;
+  top: 26px;
+  right: 30px;
+  pointer-events: auto;
+  padding: 9px 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  background: rgba(16, 11, 8, 0.7);
+  border: 1px solid rgba(240, 228, 205, 0.2);
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+
+.viewer-close:hover {
+  color: var(--ink);
+  border-color: rgba(240, 228, 205, 0.5);
+}
+
+/* ───────── 로딩 화면 ───────── */
+
+.loading {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  background: radial-gradient(circle at 50% 45%, #1a120c 0%, #0a0705 70%);
+  transition: opacity 900ms ease, visibility 900ms ease;
+}
+
+.loading[data-done="true"] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.loading h1 {
+  margin: 0;
+  font-size: clamp(30px, 6vw, 52px);
+  font-weight: 400;
+  letter-spacing: 0.4em;
+  text-indent: 0.4em;
+  color: var(--ink);
+}
+
+.loading .status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.loading .bar {
+  width: min(260px, 60vw);
+  height: 3px;
+  background: rgba(240, 228, 205, 0.12);
+  overflow: hidden;
+}
+
+.loading .bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber), var(--amber-bright));
+  transition: width 300ms ease;
+}
+
+/* ───────── 우측 하단 컨트롤 ───────── */
+
+.corner-controls {
+  position: absolute;
+  right: 22px;
+  bottom: 20px;
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.corner-controls button {
+  padding: 8px 13px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  background: rgba(16, 11, 8, 0.6);
+  border: 1px solid rgba(240, 228, 205, 0.14);
+  cursor: pointer;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+
+.corner-controls button:hover {
+  color: var(--ink);
+  border-color: rgba(240, 228, 205, 0.4);
+}
+
+.notice {
+  position: absolute;
+  left: 22px;
+  bottom: 20px;
+  max-width: 320px;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.7;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+  background: rgba(16, 11, 8, 0.6);
+  border-left: 2px solid var(--amber);
+}
+
+@media (max-width: 720px) {
+  .spread {
+    grid-template-columns: 1fr;
+    max-height: 84vh;
+    overflow-y: auto;
+  }
+
+  .spread {
+    background: linear-gradient(175deg, var(--paper), var(--paper-deep));
+  }
+
+  .page {
+    padding: 28px 24px;
+  }
+
+  .page h1 {
+    font-size: 24px;
+  }
+
+  .hint {
+    margin-top: 72px;
+  }
+}
