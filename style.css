@@ -1,0 +1,309 @@
+:root {
+  --accent: #ff5a36;
+  --accent-dark: #e8481f;
+  --bg: #fffdf9;
+  --text: #1c1c1c;
+  --muted: #8a8a8a;
+  --border: #ececec;
+  --danger: #d64545;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -0.5px;
+}
+
+.notify-btn {
+  border: 1px solid var(--border);
+  background: white;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.notify-btn.enabled {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+main {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+}
+
+/* Character area */
+.character-area {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.character-emoji {
+  font-size: 96px;
+  line-height: 1;
+  margin-bottom: 16px;
+  transition: transform 0.15s ease;
+}
+
+.speech-bubble {
+  background: white;
+  border: 2px solid var(--text);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin: 0 auto 20px;
+  max-width: 360px;
+}
+
+.character-task-name {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.character-task-name:empty {
+  display: none;
+}
+
+.character-message {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.character-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.action-btn.start {
+  background: var(--text);
+  color: white;
+}
+
+.action-btn.snooze {
+  background: white;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.action-btn.complete {
+  background: var(--accent);
+  color: white;
+}
+
+.action-btn:active {
+  transform: scale(0.97);
+}
+
+/* Task list */
+.section-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.task-item.urgent .task-title {
+  color: var(--accent);
+}
+
+.task-info {
+  min-width: 0;
+}
+
+.task-title {
+  font-weight: 700;
+  font-size: 15px;
+  margin: 0 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-meta {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.task-status {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: #f3f3f3;
+  font-size: 11px;
+}
+
+.task-status.in-progress {
+  background: #fff0ea;
+  color: var(--accent-dark);
+}
+
+.task-dday {
+  font-weight: 800;
+  font-size: 14px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.task-dday.overdue {
+  color: var(--danger);
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 6px;
+  flex-shrink: 0;
+}
+
+.completed-list .task-title {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.completed-details {
+  margin-top: 12px;
+}
+
+.completed-details summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+  padding: 6px 0;
+}
+
+.empty-message {
+  color: var(--muted);
+  font-size: 14px;
+  padding: 12px 0;
+}
+
+/* Add task */
+.add-task-section {
+  margin-top: 32px;
+}
+
+.toggle-form-btn {
+  width: 100%;
+  border: 2px dashed var(--border);
+  background: none;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.task-form {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.task-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.task-form input {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 15px;
+  color: var(--text);
+  font-family: inherit;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.submit-btn {
+  flex: 1;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.cancel-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+}
