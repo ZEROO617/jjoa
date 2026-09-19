@@ -1,17 +1,16 @@
 import type { Metadata, Viewport } from "next";
+import { OWNER } from "@/data/projects";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "The Library — 3D Portfolio",
-  description:
-    "오래된 도서관을 직접 걸어 다니며 프로젝트를 발견하는 인터랙티브 3D 포트폴리오.",
+  title: `${OWNER.name} — 포트폴리오`,
+  description: `${OWNER.name}의 포트폴리오. 문을 열고 들어가 서랍 속 자료를 꺼내 봅니다.`,
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0d0a08",
+  themeColor: "#ffffff",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
